@@ -7,6 +7,7 @@ declare_id!("7kJooD2pwiJV7eqbiwLgcZEjKzhAtD2n1MgAbsXiCewf");
 
 pub const TEST_PDA_SEED: &[u8] = b"test-pda";
 
+#[ephemeral]
 #[program]
 pub mod counter {
     use super::*;
@@ -14,6 +15,17 @@ pub mod counter {
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let counter = &mut ctx.accounts.counter;
         counter.count = 0;
+        msg!("PDA {} count: {}", counter.key(), counter.count);
+        Ok(())
+    }
+
+    pub fn increment(ctx: Context<Increment>) -> Result<()> {
+        let counter = &mut ctx.accounts.counter;
+        counter.count += 1;
+        if counter.count > 1000 {
+            counter.count = 0;
+        }
+
         msg!("PDA {} count: {}", counter.key(), counter.count);
         Ok(())
     }
@@ -33,6 +45,15 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Increment<'info> {
+    #[account(mut,
+        seeds = [TEST_PDA_SEED],
+        bump
+    )]
+    pub counter: Account<'info, Counter>,
 }
 
 #[account]
