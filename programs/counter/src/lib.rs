@@ -38,6 +38,26 @@ pub mod counter {
         )?;
         Ok(())
     }
+
+    pub fn commit(ctx: Context<IncrementAndCommit>) -> Result<()> {
+        commit_accounts(
+            &ctx.accounts.payer,
+            vec![&ctx.accounts.counter.to_account_info()],
+            &ctx.accounts.magic_context,
+            &ctx.accounts.magic_program,
+        )?;
+        Ok(())
+    }
+
+    pub fn undelegate(ctx: Context<IncrementAndCommit>) -> Result<()> {
+        commit_and_undelegate_accounts(
+            &ctx.accounts.payer,
+            vec![&ctx.accounts.counter.to_account_info()],
+            &ctx.accounts.magic_context,
+            &ctx.accounts.magic_program,
+        )?;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -76,6 +96,20 @@ pub struct Increment<'info> {
         bump
     )]
     pub counter: Account<'info, Counter>,
+}
+
+#[commit]
+#[derive(Accounts)]
+pub struct IncrementAndCommit<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [TEST_PDA_SEED],
+        bump
+    )]
+    pub counter: Accoutn<'info, Counter>,
 }
 
 #[account]
