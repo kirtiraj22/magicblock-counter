@@ -58,6 +58,35 @@ pub mod counter {
         )?;
         Ok(())
     }
+
+    pub fn increment_and_commit(ctx: Context<IncrementAndCommit>) -> Result<()> {
+        let counter = &mut ctx.accounts.counter;
+        counter.count += 1;
+        msg!("PDA {} count: {}", counter.key(), counter.count);
+        commit_accounts(
+            &ctx.accounts.payer,
+            vec![&ctx.accounts.counter.to_account_info()],
+            &ctx.accounts.magic_context,
+            &ctx.accounts.magic_program,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn increment_and_undelegate(ctx: Context<IncrementAndCommit>) -> Result<()> {
+        let counter = &mut ctx.accounts.counter;
+        counter.count += 1;
+        msg!("PDA {} count: {}", counter.key(), counter.count);
+
+        counter.exit(&crate::ID)?;
+        commit_and_undelegate_accounts(
+            &ctx.accounts.payer,
+            vec![&ctx.accounts.counter.to_account_info()],
+            &ctx.accounts.magic_context,
+            &ctx.accounts.magic_program,
+        )?;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -81,6 +110,7 @@ pub struct Initialize<'info> {
 pub struct DelegateInput<'info> {
     pub payer: Signer<'info>,
 
+    /// CHECK The pda to delegate
     #[account(
         mut,
         del
@@ -109,7 +139,7 @@ pub struct IncrementAndCommit<'info> {
         seeds = [TEST_PDA_SEED],
         bump
     )]
-    pub counter: Accoutn<'info, Counter>,
+    pub counter: Account<'info, Counter>,
 }
 
 #[account]
