@@ -29,6 +29,15 @@ pub mod counter {
         msg!("PDA {} count: {}", counter.key(), counter.count);
         Ok(())
     }
+
+    pub fn delegate(ctx: Context<DelegateInput>) -> Result<()> {
+        ctx.accounts.delegate_pda(
+            &ctx.accounts.payer,
+            &[TEST_PDA_SEED],
+            DelegateConfig::default(),
+        )?;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -47,9 +56,22 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[delegate]
+#[derive(Accounts)]
+pub struct DelegateInput<'info> {
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        del
+    )]
+    pub pda: AccountInfo<'info>,
+}
+
 #[derive(Accounts)]
 pub struct Increment<'info> {
-    #[account(mut,
+    #[account(
+        mut,
         seeds = [TEST_PDA_SEED],
         bump
     )]
