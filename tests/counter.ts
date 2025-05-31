@@ -55,4 +55,51 @@ describe("counter", () => {
 		const duration = Date.now() - start;
 		console.log(`${duration}ms (Base Layer) Initialize txHash: ${txHash}`)
 	})
+
+	it("Increase counter on Solana", async () => {
+		const start = Date.now();
+		const txHash = await program.methods.increment().accounts({
+			counter: pda,
+		}).rpc();
+
+		const duration = Date.now() - start;
+		console.log(`${duration}ms (Base Layer) Increment TxHash: ${txHash}`)
+	})
+
+	it("Delegate counter to ER", async () => {
+		const start = Date.now();
+		let tx = await program.methods.delegate().accounts({
+			payer: provider.wallet.publicKey,
+			pda: pda
+		}).transaction();
+
+		tx.feePayer = provider.wallet.publicKey;
+		tx.recentBlockhash = (
+			await provider.connection.getLatestBlockhash()
+		).blockhash;
+
+		tx = await providerEphemeralRollup.wallet.signTransaction(tx);
+		const txHash = await provider.sendAndConfirm(tx, [], {
+			skipPreflight: true,
+			commitment: "confirmed"
+		})
+		const duration = Date.now() - start;
+		console.log(`${duration}ms (Base Layer) Delegate txHash: ${txHash}`)
+	})
+
+	it("Increase counter on ER (1)", async () => {
+		const start = Date.now();
+		let tx = await program.methods.increment().accounts({
+			counter: pda
+		}).transaction();
+
+		tx.feePayer = providerEphemeralRollup.wallet.publicKey;
+		tx.recentBlockhash = (await providerEphemeralRollup.connection.getLatestBlockhash()).blockhash;
+		tx = await providerEphemeralRollup.wallet.signTransaction(tx);
+		const txHash = await providerEphemeralRollup.sendAndConfirm(tx);
+		const duration = Date.now() - start;
+		console.log(`${duration}ms (ER) Increment txHash: ${txHash}`)
+	})
+
+	
 });
