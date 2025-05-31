@@ -101,5 +101,71 @@ describe("counter", () => {
 		console.log(`${duration}ms (ER) Increment txHash: ${txHash}`)
 	})
 
-	
+	it("Commit counter state on ER to Solana", async () => {
+		const start = Date.now();
+		let tx = await program.methods.commit().accounts({
+			payer: providerEphemeralRollup.wallet.publicKey,
+			// @ts-ignore
+			counter: pda
+		}).transaction();
+
+		tx.feePayer = providerEphemeralRollup.wallet.publicKey;
+		tx.recentBlockhash = (
+			await providerEphemeralRollup.connection.getLatestBlockhash()
+		).blockhash;
+		tx = await providerEphemeralRollup.wallet.signTransaction(tx);
+
+		const txHash = await providerEphemeralRollup.sendAndConfirm(tx, [], {
+			skipPreflight: true,
+		})
+
+		const duration = Date.now() - start;
+		console.log(`${duration}ms (ER) Commit txHash: ${txHash}`);
+
+		const confirmCommitStart = Date.now();
+		
+		const txCommitSignature = await GetCommitmentSignature(
+			txHash,
+			providerEphemeralRollup.connection
+		);
+		const commitDuration = Date.now() - confirmCommitStart;
+		console.log(`${commitDuration}ms (Base Layer) commit txHash: ${txCommitSignature}`)
+	})
+
+	it("Increase counter on ER (2)", async () => {
+		const start = Date.now();
+		let tx = await program.methods.increment().accounts({
+			counter: pda,
+		}).transaction();
+
+		tx.feePayer = providerEphemeralRollup.wallet.publicKey;
+		tx.recentBlockhash = (
+			await providerEphemeralRollup.connection.getLatestBlockhash()
+		).blockhash
+		tx = await providerEphemeralRollup.wallet.signTransaction(tx);
+		const txHash = await providerEphemeralRollup.sendAndConfirm(tx);
+		const duration = Date.now() - start;
+
+		console.log(`${duration}ms (ER) Increment txHash: ${txHash}`)
+	})
+
+	it("Commit and undelegate counter on ER to Solana", async () => {
+		const start = Date.now();
+		let tx = await program.methods.incrementAndUndelegate().accounts({
+			payer: providerEphemeralRollup.wallet.publicKey,
+			// @ts-ignore
+			counter: pda
+		}).transaction();
+
+		tx.feePayer = provider.wallet.publicKey;
+		tx.recentBlockhash = (
+			await providerEphemeralRollup.connection.getLatestBlockhash()
+		).blockhash;
+
+		tx = await providerEphemeralRollup.wallet.signTransaction(tx);
+
+		const txHash = await providerEphemeralRollup.sendAndConfirm(tx);
+		const duration = Date.now() - start;
+		console.log(`${duration}ms (ER) undelegate txHash: ${txHash}`)
+	})
 });
